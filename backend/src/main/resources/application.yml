@@ -1,0 +1,39 @@
+spring:
+  application:
+    name: taskflow-backend
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+
+server:
+  port: ${SERVER_PORT:8080}
+  error:
+    include-message: always
+    include-binding-errors: always
+
+# JWT Configuration
+app:
+  jwt:
+    secret: ${JWT_SECRET:default_dev_secret_key_which_is_very_long_for_hmac_sha256}
+    expiration-ms: ${JWT_EXPIRATION_MS:900000} # 15 minutes
+    refresh-expiration-ms: ${JWT_REFRESH_EXPIRATION_MS:86400000} # 24 hours
+
+# Actuator Endpoints
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
+  info:
+    env:
+      enabled: true
+
+# Swagger UI configuration
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    operationsSorter: method
+  api-docs:
+    path: /v3/api-docs
