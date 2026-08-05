@@ -52,8 +52,7 @@ public class AttachmentServiceImpl implements AttachmentService {
 
             Attachment attachment = Attachment.builder()
                     .fileName(file.getOriginalFilename())
-                    .fileType(file.getContentType())
-                    .fileSize(file.getSize())
+                    .fileSizeBytes(file.getSize())
                     .fileUrl("/api/v1/attachments/" + fileName)
                     .task(task)
                     .uploader(uploader)
