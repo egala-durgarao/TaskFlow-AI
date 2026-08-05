@@ -47,9 +47,9 @@ public class TeamServiceImpl implements TeamService {
 
         if (request.getMemberIds() != null && !request.getMemberIds().isEmpty()) {
             List<User> members = userRepository.findAllById(request.getMemberIds());
-            team.setUsers(new HashSet<>(members));
+            team.setMembers(new HashSet<>(members));
         } else {
-            team.setUsers(new HashSet<>());
+            team.setMembers(new HashSet<>());
         }
 
         return teamMapper.toDto(teamRepository.save(team));
@@ -81,7 +81,7 @@ public class TeamServiceImpl implements TeamService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
-        team.getUsers().add(user);
+        team.getMembers().add(user);
         teamRepository.save(team);
     }
 
@@ -93,7 +93,7 @@ public class TeamServiceImpl implements TeamService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
-        team.getUsers().remove(user);
+        team.getMembers().remove(user);
         teamRepository.save(team);
     }
 }

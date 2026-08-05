@@ -31,10 +31,10 @@ public class ActivityLogEventListener {
             User actor = userRepository.findById(event.getAssignerId()).orElseThrow();
             ActivityLog logEntry = ActivityLog.builder()
                     .user(actor)
-                    .action("TASK_ASSIGNED")
-                    .entityType("TASK")
-                    .entityId(event.getTaskId())
-                    .details("Assigned task '" + event.getTaskTitle() + "' to user " + event.getAssigneeId())
+                    .actionType(com.taskflow.common.enums.ActivityType.TASK_UPDATED)
+                    .action("Assigned task '" + event.getTaskTitle() + "' to user " + event.getAssigneeId())
+                    .targetType("TASK")
+                    .targetId(event.getTaskId())
                     .build();
             activityLogRepository.save(logEntry);
         } catch (Exception e) {
@@ -50,10 +50,10 @@ public class ActivityLogEventListener {
             User actor = userRepository.findById(event.getActorId()).orElseThrow();
             ActivityLog logEntry = ActivityLog.builder()
                     .user(actor)
-                    .action("TASK_STATUS_CHANGED")
-                    .entityType("TASK")
-                    .entityId(event.getTaskId())
-                    .details("Changed status of task '" + event.getTaskTitle() + "' to " + event.getNewStatus())
+                    .actionType(com.taskflow.common.enums.ActivityType.TASK_UPDATED)
+                    .action("Changed status of task '" + event.getTaskTitle() + "' to " + event.getNewStatus())
+                    .targetType("TASK")
+                    .targetId(event.getTaskId())
                     .build();
             activityLogRepository.save(logEntry);
         } catch (Exception e) {

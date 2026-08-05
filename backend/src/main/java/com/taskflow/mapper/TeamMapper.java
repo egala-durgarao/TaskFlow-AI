@@ -12,7 +12,7 @@ import org.mapstruct.ReportingPolicy;
 @Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE, nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
 public interface TeamMapper {
     @Mapping(target = "workspaceId", source = "workspace.id")
-    @Mapping(target = "memberCount", expression = "java(team.getUsers() != null ? team.getUsers().size() : 0)")
+    @Mapping(target = "memberCount", expression = "java(team.getMembers() != null ? team.getMembers().size() : 0)")
     TeamResponse toDto(Team team);
 
     Team toEntity(TeamRequest request);

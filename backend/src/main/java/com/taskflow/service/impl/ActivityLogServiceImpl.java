@@ -35,6 +35,6 @@ public class ActivityLogServiceImpl implements ActivityLogService {
     @Override
     @Transactional(readOnly = true)
     public Page<ActivityLogResponse> getTaskActivity(UUID taskId, Pageable pageable) {
-        return activityLogRepository.findByEntityId(taskId, pageable).map(activityLogMapper::toDto);
+        return activityLogRepository.findByTargetTypeAndTargetId("TASK", taskId, pageable).map(activityLogMapper::toDto);
     }
 }

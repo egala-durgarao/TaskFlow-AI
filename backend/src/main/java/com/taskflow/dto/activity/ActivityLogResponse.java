@@ -15,9 +15,9 @@ public class ActivityLogResponse {
     private UUID id;
     private UUID userId;
     private String userName;
+    private String actionType;
     private String action;
-    private String entityType;
-    private UUID entityId;
-    private String details;
+    private String targetType;
+    private UUID targetId;
     private Instant createdAt;
 }
