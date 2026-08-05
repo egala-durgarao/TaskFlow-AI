@@ -28,7 +28,7 @@ public class ReportServiceImpl implements ReportService {
         long pendingTasks = taskRepository.countPendingByWorkspaceId(request.getWorkspaceId());
 
         Map<String, Long> tasksByStatus = new HashMap<>();
-        tasksByStatus.put(TaskStatus.DONE.name(), completedTasks);
+        tasksByStatus.put(TaskStatus.COMPLETED.name(), completedTasks);
         tasksByStatus.put(TaskStatus.TODO.name(), pendingTasks);
 
         Map<String, Long> tasksByPriority = new HashMap<>();
