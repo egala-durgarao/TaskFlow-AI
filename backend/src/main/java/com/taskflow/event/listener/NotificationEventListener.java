@@ -35,7 +35,7 @@ public class NotificationEventListener {
             User assignee = userRepository.findById(event.getAssigneeId()).orElseThrow();
             Notification notification = Notification.builder()
                     .user(assignee)
-                    .type(NotificationType.TASK_ASSIGNED)
+                    .type(NotificationType.ASSIGNMENT)
                     .content("You have been assigned to task: " + event.getTaskTitle())
                     .isRead(false)
                     .build();
