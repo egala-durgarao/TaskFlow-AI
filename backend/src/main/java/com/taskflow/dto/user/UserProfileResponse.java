@@ -1,6 +1,6 @@
 package com.taskflow.dto.user;
 
-import com.taskflow.common.enums.Role;
+import com.taskflow.common.enums.UserRole;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -18,7 +18,7 @@ public class UserProfileResponse {
     private String email;
     private String firstName;
     private String lastName;
-    private Role role;
+    private UserRole role;
     private String profilePictureUrl;
     private Instant createdAt;
 }
