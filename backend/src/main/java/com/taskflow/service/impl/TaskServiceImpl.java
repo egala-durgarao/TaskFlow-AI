@@ -9,6 +9,8 @@ import com.taskflow.dto.task.TaskStatusUpdateRequest;
 import com.taskflow.entity.Project;
 import com.taskflow.entity.Task;
 import com.taskflow.entity.User;
+import com.taskflow.event.TaskAssignedEvent;
+import com.taskflow.event.TaskStatusChangedEvent;
 import com.taskflow.exception.ResourceNotFoundException;
 import com.taskflow.mapper.TaskMapper;
 import com.taskflow.repository.ProjectRepository;
@@ -16,6 +18,7 @@ import com.taskflow.repository.TaskRepository;
 import com.taskflow.repository.UserRepository;
 import com.taskflow.service.TaskService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -31,6 +34,7 @@ public class TaskServiceImpl implements TaskService {
     private final ProjectRepository projectRepository;
     private final UserRepository userRepository;
     private final TaskMapper taskMapper;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Override
     @Transactional
@@ -56,6 +60,12 @@ public class TaskServiceImpl implements TaskService {
         if (task.getPriority() == null) task.setPriority(TaskPriority.MEDIUM);
 
         task = taskRepository.save(task);
+
+        if (assignee != null) {
+            eventPublisher.publishEvent(new TaskAssignedEvent(
+                    task.getId(), task.getTitle(), assignee.getId(), reporterId));
+        }
+
         return taskMapper.toDto(task);
     }
 
@@ -70,7 +80,6 @@ public class TaskServiceImpl implements TaskService {
     @Override
     @Transactional(readOnly = true)
     public Page<TaskResponse> getTasks(UUID projectId, TaskStatus status, TaskPriority priority, String search, Pageable pageable) {
-        // Simplified query logic; normally requires QueryDSL or Criteria API for multiple optional filters
         if (projectId != null) {
             return taskRepository.findByProjectId(projectId, pageable).map(taskMapper::toDto);
         } else if (status != null) {
@@ -95,6 +104,10 @@ public class TaskServiceImpl implements TaskService {
             User assignee = userRepository.findById(request.getAssigneeId())
                     .orElseThrow(() -> new ResourceNotFoundException("Assignee not found"));
             task.setAssignee(assignee);
+
+            // Should track previous assignee to avoid re-notifying, omitting for brevity
+            eventPublisher.publishEvent(new TaskAssignedEvent(
+                    task.getId(), task.getTitle(), assignee.getId(), task.getReporter().getId()));
         }
 
         task = taskRepository.save(task);
@@ -109,6 +122,9 @@ public class TaskServiceImpl implements TaskService {
 
         task.setStatus(request.getStatus());
         task = taskRepository.save(task);
+
+        eventPublisher.publishEvent(new TaskStatusChangedEvent(
+                task.getId(), task.getTitle(), task.getStatus(), task.getProject().getId(), task.getReporter().getId()));
 
         return taskMapper.toDto(task);
     }

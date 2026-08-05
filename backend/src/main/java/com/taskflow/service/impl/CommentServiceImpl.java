@@ -5,6 +5,7 @@ import com.taskflow.dto.task.CommentResponse;
 import com.taskflow.entity.Comment;
 import com.taskflow.entity.Task;
 import com.taskflow.entity.User;
+import com.taskflow.event.CommentAddedEvent;
 import com.taskflow.exception.ResourceNotFoundException;
 import com.taskflow.mapper.CommentMapper;
 import com.taskflow.repository.CommentRepository;
@@ -12,6 +13,7 @@ import com.taskflow.repository.TaskRepository;
 import com.taskflow.repository.UserRepository;
 import com.taskflow.service.CommentService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -27,6 +29,7 @@ public class CommentServiceImpl implements CommentService {
     private final TaskRepository taskRepository;
     private final UserRepository userRepository;
     private final CommentMapper commentMapper;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Override
     @Transactional(readOnly = true)
@@ -46,7 +49,13 @@ public class CommentServiceImpl implements CommentService {
         comment.setTask(task);
         comment.setUser(user);
 
-        return commentMapper.toDto(commentRepository.save(comment));
+        comment = commentRepository.save(comment);
+
+        UUID assigneeId = task.getAssignee() != null ? task.getAssignee().getId() : null;
+        eventPublisher.publishEvent(new CommentAddedEvent(
+                task.getId(), task.getTitle(), userId, assigneeId));
+
+        return commentMapper.toDto(comment);
     }
 
     @Override
