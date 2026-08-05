@@ -1,29 +1,29 @@
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
--- 1. Organizations (Top-level multi-tenancy)
+-- 1. Organizations
 CREATE TABLE organizations (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name VARCHAR(255) NOT NULL,
     domain VARCHAR(255) UNIQUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP,
     deleted_at TIMESTAMP
 );
 
--- 2. Workspaces (Sub-divisions within an organization)
+-- 2. Workspaces
 CREATE TABLE workspaces (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     organization_id UUID NOT NULL REFERENCES organizations(id),
     name VARCHAR(255) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP,
     deleted_at TIMESTAMP
 );
 
 -- 3. Roles
 CREATE TABLE roles (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    name VARCHAR(50) UNIQUE NOT NULL, -- e.g., ROLE_ADMIN, ROLE_MANAGER, ROLE_MEMBER, ROLE_VIEWER
+    name VARCHAR(50) UNIQUE NOT NULL,
     description VARCHAR(255)
 );
 
@@ -36,9 +36,10 @@ CREATE TABLE users (
     last_name VARCHAR(100) NOT NULL,
     email VARCHAR(255) UNIQUE NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
-    is_active BOOLEAN DEFAULT TRUE,
+    role VARCHAR(50) NOT NULL,
+    is_active BOOLEAN DEFAULT TRUE NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP,
     deleted_at TIMESTAMP
 );
 
@@ -49,7 +50,9 @@ CREATE TABLE user_preferences (
     theme VARCHAR(20) DEFAULT 'light',
     ai_suggestions BOOLEAN DEFAULT TRUE,
     compact_mode BOOLEAN DEFAULT FALSE,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP,
+    deleted_at TIMESTAMP
 );
 
 -- 6. Teams
@@ -58,7 +61,7 @@ CREATE TABLE teams (
     workspace_id UUID NOT NULL REFERENCES workspaces(id),
     name VARCHAR(255) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP,
     deleted_at TIMESTAMP
 );
 
@@ -69,20 +72,18 @@ CREATE TABLE projects (
     name VARCHAR(255) NOT NULL,
     project_key VARCHAR(50) NOT NULL,
     description TEXT,
-    status VARCHAR(50) DEFAULT 'PLANNING',
+    status VARCHAR(50) DEFAULT 'PLANNING' NOT NULL,
     target_date TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP,
     deleted_at TIMESTAMP
 );
 
--- 8. Project Members (Many-to-Many associative table)
-CREATE TABLE project_members (
-    project_id UUID NOT NULL REFERENCES projects(id),
+-- 8. Team Members (Many-to-Many associative table)
+CREATE TABLE team_members (
+    team_id UUID NOT NULL REFERENCES teams(id),
     user_id UUID NOT NULL REFERENCES users(id),
-    project_role VARCHAR(50) NOT NULL,
-    joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (project_id, user_id)
+    PRIMARY KEY (team_id, user_id)
 );
 
 -- 9. Tasks
@@ -93,12 +94,12 @@ CREATE TABLE tasks (
     reporter_id UUID NOT NULL REFERENCES users(id),
     title VARCHAR(255) NOT NULL,
     description TEXT,
-    status VARCHAR(50) DEFAULT 'TODO',
-    priority VARCHAR(50) DEFAULT 'MEDIUM',
+    status VARCHAR(50) DEFAULT 'TODO' NOT NULL,
+    priority VARCHAR(50) DEFAULT 'MEDIUM' NOT NULL,
     estimate_hours NUMERIC(5,2),
     due_date TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP,
     deleted_at TIMESTAMP
 );
 
@@ -107,9 +108,10 @@ CREATE TABLE subtasks (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     task_id UUID NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
     title VARCHAR(255) NOT NULL,
-    is_completed BOOLEAN DEFAULT FALSE,
+    is_completed BOOLEAN DEFAULT FALSE NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    updated_at TIMESTAMP,
+    deleted_at TIMESTAMP
 );
 
 -- 11. Comments
@@ -119,7 +121,7 @@ CREATE TABLE comments (
     user_id UUID NOT NULL REFERENCES users(id),
     content TEXT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP,
     deleted_at TIMESTAMP
 );
 
@@ -132,6 +134,7 @@ CREATE TABLE attachments (
     file_url VARCHAR(1024) NOT NULL,
     file_size_bytes BIGINT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP,
     deleted_at TIMESTAMP
 );
 
@@ -141,22 +144,55 @@ CREATE TABLE notifications (
     user_id UUID NOT NULL REFERENCES users(id),
     type VARCHAR(50) NOT NULL,
     content VARCHAR(512) NOT NULL,
-    is_read BOOLEAN DEFAULT FALSE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    is_read BOOLEAN DEFAULT FALSE NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP,
+    deleted_at TIMESTAMP
 );
 
--- 14. Activity Logs (Audit Table)
+-- 14. Activity Logs
 CREATE TABLE activity_logs (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID REFERENCES users(id),
     workspace_id UUID REFERENCES workspaces(id),
+    action_type VARCHAR(50) NOT NULL,
     action VARCHAR(255) NOT NULL,
     target_type VARCHAR(50) NOT NULL,
     target_id UUID,
-    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP,
+    deleted_at TIMESTAMP
 );
 
--- Indices for performance on frequent lookups
+-- 15. Tags
+CREATE TABLE tags (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name VARCHAR(255) UNIQUE NOT NULL,
+    color VARCHAR(50) DEFAULT '#6366f1' NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP,
+    deleted_at TIMESTAMP
+);
+
+-- 16. Task Tags
+CREATE TABLE task_tags (
+    task_id UUID NOT NULL REFERENCES tasks(id),
+    tag_id UUID NOT NULL REFERENCES tags(id),
+    PRIMARY KEY (task_id, tag_id)
+);
+
+-- 17. Refresh Tokens
+CREATE TABLE refresh_tokens (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id),
+    token VARCHAR(255) UNIQUE NOT NULL,
+    expiry_date TIMESTAMP NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP,
+    deleted_at TIMESTAMP
+);
+
+-- Indices for performance
 CREATE INDEX idx_users_email ON users(email);
 CREATE INDEX idx_tasks_project ON tasks(project_id);
 CREATE INDEX idx_tasks_assignee ON tasks(assignee_id);
